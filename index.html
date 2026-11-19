@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>DXQ Workshop Checklist</title>
+<style>
+.theme{
+  --hdr:linear-gradient(160deg,#effbea 0%,#c8eed2 100%);
+  --hdr-text:#14361f; --hdr-sub:#4f7a5b; --brand:#15803d;
+  --bg:#f3f7f2; --card:#ffffff; --text:#1f2430; --muted:#66706a; --line:#dfe9dc;
+  --field:#f8fbf7; --accent:#16a34a; --sep:#edf3eb; --bar:#ffffff; --btn:#16a34a; --btn-done:#14532d;
+}
+#tab-closing:checked ~ .theme{
+  --hdr:linear-gradient(160deg,#4a5578 0%,#6b6f9e 100%);
+  --hdr-text:#ffffff; --hdr-sub:#d3d7ec; --brand:#ffc489;
+  --bg:#dfe2ec; --card:#f4f5fa; --text:#1f2437; --muted:#5f667f; --line:#d3d7e4;
+  --field:#ffffff; --accent:#5b62a8; --sep:#e3e5ef; --bar:#eceef6; --btn:#4a5578; --btn-done:#12b76a;
+}
+.bgfill{position:fixed;inset:0;z-index:-1;background:var(--bg)}
+.tabradio{position:absolute;opacity:0}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:#1f2430;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh}
+
+/* What shows when:
+   - no JavaScript (WhatsApp / Files preview): only the warning
+   - JavaScript, locked: only the password screen
+   - unlocked: the checklist                                   */
+.app,.lock{display:none}
+.ready .warn-screen{display:none}
+.ready .lock{display:flex}
+.ready.unlocked .lock{display:none}
+.ready.unlocked .app{display:block}
+
+.top{background:var(--hdr);color:var(--hdr-text);padding:22px 16px 26px}
+.top .in{max-width:560px;margin:0 auto}
+.brand{font-size:12px;font-weight:800;letter-spacing:2px;color:var(--brand)}
+h1{margin:4px 0 2px;font-size:25px}
+.sub{font-size:14px;color:var(--hdr-sub);min-height:17px}
+
+/* Preview warning */
+.warn-screen .box{max-width:520px;margin:16px auto;background:#fffaeb;border:1.5px solid #fec84b;color:#7a2e0e;border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.5}
+
+/* Password screen */
+.lock{min-height:calc(100vh - 110px);align-items:center;justify-content:center;padding:20px 16px}
+.lock-card{width:100%;max-width:380px;background:var(--card);border-radius:20px;padding:26px 22px;text-align:center;box-shadow:0 8px 30px rgba(30,40,60,.12)}
+.lock-icon{font-size:40px;line-height:1}
+.lock-card h2{margin:10px 0 4px;font-size:20px}
+.lock-card p{margin:0 0 16px;color:var(--muted);font-size:14px}
+.lock-card .err{color:#d92d20;font-size:14px;font-weight:600;min-height:20px;margin-top:10px}
+.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* Checklist */
+.page{max-width:560px;margin:0 auto;padding:14px 14px 175px}
+.card{background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(30,40,60,.08)}
+.lbl{display:block;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+input[type=text],input[type=password],textarea{display:block;width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--field);color:var(--text);-webkit-appearance:none;outline:none}
+input:focus,textarea:focus{border-color:var(--accent)}
+.lock-card input{text-align:center;letter-spacing:2px}
+textarea{min-height:64px;resize:vertical}
+.bad{border-color:#f04438!important;background:#fef3f2!important}
+
+.prog{display:flex;align-items:center;margin-bottom:4px}
+.track{flex:1;height:8px;background:var(--sep);border-radius:99px;overflow:hidden;margin-right:12px}
+.fill{display:block;height:100%;width:0;background:#12b76a;border-radius:99px;transition:width .25s}
+.count{font-weight:800;font-size:15px;min-width:40px;text-align:right}
+
+h3{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent);margin:16px 0 4px;padding-left:10px;border-left:3px solid var(--accent)}
+.task{display:flex;align-items:flex-start;padding:12px 0;cursor:pointer;-webkit-user-select:none;user-select:none}
+.task + .task{border-top:1px solid var(--sep)}
+.task input{position:absolute;opacity:0}
+.tick{flex:0 0 30px;height:30px;margin-right:12px;border:2px solid #c9ccd6;border-radius:50%;position:relative;background:#fff;transition:all .15s}
+.task input:checked + .tick{background:#12b76a;border-color:#12b76a}
+.task input:checked + .tick:after{content:"";position:absolute;left:9px;top:4px;width:7px;height:13px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.body{flex:1}
+.body b{display:block;font-size:15.5px}
+.body small{display:block;font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+.task input:checked ~ .body b{color:#9aa0ae;text-decoration:line-through}
+.task input:checked ~ .body small{color:#9aa0ae}
+
+/* Tabs */
+.tabs{display:flex;background:var(--card);border-radius:14px;padding:5px;margin-bottom:12px;box-shadow:0 2px 8px rgba(30,40,60,.10)}
+.tabs label{flex:1;text-align:center;padding:12px 6px;border-radius:10px;font-weight:800;font-size:15px;color:var(--muted);cursor:pointer}
+#tab-opening:checked ~ .app .l-opening,#tab-closing:checked ~ .app .l-closing{background:var(--btn);color:#fff}
+.list{display:none}
+#tab-opening:checked ~ .app #list-opening,#tab-closing:checked ~ .app #list-closing{display:block}
+
+/* Buttons */
+.btn{flex:1;display:flex;align-items:center;justify-content:center;font:inherit;font-size:16px;font-weight:800;padding:15px 8px;border-radius:14px;border:0;cursor:pointer;white-space:nowrap;background:var(--btn);color:#fff;text-decoration:none;width:100%}
+.btn svg{width:20px;height:20px;margin-right:8px;flex:0 0 20px}
+.btn.done{background:var(--btn-done)}
+.btn-wa{background:#25D366;margin-right:10px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bar);box-shadow:0 -4px 20px rgba(30,40,60,.10);padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.bar .row{max-width:560px;margin:0 auto;display:flex}
+.hint{max-width:560px;margin:8px auto 0;text-align:center;font-size:12px;color:var(--muted);font-style:italic}
+.lockbtn{display:block;margin:6px auto 0;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
+#toast{position:fixed;left:50%;bottom:125px;transform:translateX(-50%);background:#1f2430;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;display:none;white-space:nowrap;z-index:9}
+</style>
+</head>
+<body>
+<input type="radio" name="tab" id="tab-opening" class="tabradio" checked>
+<input type="radio" name="tab" id="tab-closing" class="tabradio">
+<div class="bgfill theme"></div>
+<header class="top theme"><div class="in">
+  <div class="brand">DXQ WORKSHOP</div>
+  <h1>Daily Checklist</h1>
+  <div class="sub" id="today"></div>
+</div></header>
+
+<!-- Shown only where the page can't run (WhatsApp / Files preview) -->
+<div class="warn-screen theme"><div class="box">
+  <b>⚠️ This checklist can't open in this preview.</b><br>
+  Open it from a <b>link</b> in Safari or Chrome.<br>
+  Samsung: tap ⋮ → <b>Open with</b> → Chrome.
+</div></div>
+
+<!-- Password screen -->
+<div class="lock theme">
+  <form class="lock-card" id="lockform" autocomplete="off">
+    <div class="lock-icon">🔒</div>
+    <h2>DXQ Workshop Checklist</h2>
+    <p>Enter the workshop password</p>
+    <input type="password" id="pw" placeholder="Password" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <div class="err" id="pwerr"></div>
+    <button class="btn" type="submit">Unlock</button>
+  </form>
+</div>
+
+<!-- Checklist -->
+<div class="app theme">
+  <div class="page">
+    <div class="tabs"><label for="tab-opening" class="l-opening">☀️ Opening</label><label for="tab-closing" class="l-closing">🌙 Closing</label></div>
+
+    <div class="card">
+      <label class="lbl" for="name">In charge</label>
+      <input type="text" id="name" placeholder="e.g. Richard / Jay" autocomplete="off">
+    </div>
+
+    <div class="card list" id="list-opening" data-title="WORKSHOP OPENING CHECKLIST">
+      <div class="prog"><span class="track"><i class="fill" id="fill-opening"></i></span><span class="count" id="count-opening">0/8</span></div>
+    <h3>Building &amp; power</h3>
+    <label class="task"><input type="checkbox" data-sec="Building &amp; power" data-title="Facility check" data-desc="Lights, AC, sockets and water working. No leaks or damage. Report faults to Tamer or store manager."><span class="tick"></span><span class="body"><b>Facility check</b><small>Lights, AC, sockets and water working. No leaks or damage. Report faults to Tamer or store manager.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Building &amp; power" data-title="Workshop equipment ON" data-desc="Compressor, Muc-Off and Silca Wax: switch ON only if needed today. Compressor: all 4 motors running."><span class="tick"></span><span class="body"><b>Workshop equipment ON</b><small>Compressor, Muc-Off and Silca Wax: switch ON only if needed today. Compressor: all 4 motors running.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Building &amp; power" data-title="Lights &amp; AC ON" data-desc="Switches at the back door and behind the counter computer."><span class="tick"></span><span class="body"><b>Lights &amp; AC ON</b><small>Switches at the back door and behind the counter computer.</small></span></label>
+    <h3>Counter &amp; workshop</h3>
+    <label class="task"><input type="checkbox" data-sec="Counter &amp; workshop" data-title="Check-in counter" data-desc="Computer and tablet ON. Drawer tidy. Bike tags organised. Enough top tube protectors."><span class="tick"></span><span class="body"><b>Check-in counter</b><small>Computer and tablet ON. Drawer tidy. Bike tags organised. Enough top tube protectors.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Counter &amp; workshop" data-title="Workstation" data-desc="Clean, nothing left on top. Tools organised and stored in drawers."><span class="tick"></span><span class="body"><b>Workstation</b><small>Clean, nothing left on top. Tools organised and stored in drawers.</small></span></label>
+    <h3>Bikes</h3>
+    <label class="task"><input type="checkbox" data-sec="Bikes" data-title="Senior mechanic check" data-desc="Final check done on every completed bike."><span class="tick"></span><span class="body"><b>Senior mechanic check</b><small>Final check done on every completed bike.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Bikes" data-title="Completed bikes" data-desc="Completion time recorded. Customer told the bike is ready."><span class="tick"></span><span class="body"><b>Completed bikes</b><small>Completion time recorded. Customer told the bike is ready.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Bikes" data-title="Bicycle workshop storage" data-desc="All bikes stored safely and tagged."><span class="tick"></span><span class="body"><b>Bicycle workshop storage</b><small>All bikes stored safely and tagged.</small></span></label>
+    </div>
+
+    <div class="card list" id="list-closing" data-title="WORKSHOP CLOSING CHECKLIST">
+      <div class="prog"><span class="track"><i class="fill" id="fill-closing"></i></span><span class="count" id="count-closing">0/9</span></div>
+    <h3>Building &amp; power</h3>
+    <label class="task"><input type="checkbox" data-sec="Building &amp; power" data-title="Facility check" data-desc="Taps closed, no leaks. No damage. Back door locked. Report faults to Tamer or store manager."><span class="tick"></span><span class="body"><b>Facility check</b><small>Taps closed, no leaks. No damage. Back door locked. Report faults to Tamer or store manager.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Building &amp; power" data-title="Workshop equipment OFF" data-desc="Compressor, Muc-Off and Silca Wax OFF and unplugged, extensions too. No exceptions."><span class="tick"></span><span class="body"><b>Workshop equipment OFF</b><small>Compressor, Muc-Off and Silca Wax OFF and unplugged, extensions too. No exceptions.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Building &amp; power" data-title="Lights &amp; AC OFF" data-desc="Switches at the back door and behind the counter computer."><span class="tick"></span><span class="body"><b>Lights &amp; AC OFF</b><small>Switches at the back door and behind the counter computer.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Building &amp; power" data-title="Power tools OFF" data-desc="Drills, grinders, cutters and all other power tools unplugged and stored in drawers or their proper place."><span class="tick"></span><span class="body"><b>Power tools OFF</b><small>Drills, grinders, cutters and all other power tools unplugged and stored in drawers or their proper place.</small></span></label>
+    <h3>Counter &amp; workshop</h3>
+    <label class="task"><input type="checkbox" data-sec="Counter &amp; workshop" data-title="Check-in counter" data-desc="Computer and tablet OFF. Drawer tidy. Bike tags organised. Enough top tube protectors for tomorrow."><span class="tick"></span><span class="body"><b>Check-in counter</b><small>Computer and tablet OFF. Drawer tidy. Bike tags organised. Enough top tube protectors for tomorrow.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Counter &amp; workshop" data-title="Workstation" data-desc="Clean, nothing left on top. Tools organised and stored in drawers. Garbage and cardboard out."><span class="tick"></span><span class="body"><b>Workstation</b><small>Clean, nothing left on top. Tools organised and stored in drawers. Garbage and cardboard out.</small></span></label>
+    <h3>Bikes</h3>
+    <label class="task"><input type="checkbox" data-sec="Bikes" data-title="Senior mechanic check" data-desc="Final check done on every completed bike."><span class="tick"></span><span class="body"><b>Senior mechanic check</b><small>Final check done on every completed bike.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Bikes" data-title="Completed bikes" data-desc="Completion time recorded. Customer told the bike is ready."><span class="tick"></span><span class="body"><b>Completed bikes</b><small>Completion time recorded. Customer told the bike is ready.</small></span></label>
+    <label class="task"><input type="checkbox" data-sec="Bikes" data-title="Bicycle workshop storage" data-desc="All bikes stored safely and tagged."><span class="tick"></span><span class="body"><b>Bicycle workshop storage</b><small>All bikes stored safely and tagged.</small></span></label>
+    </div>
+
+    <div class="card">
+      <label class="lbl" for="notes">Notes / issues</label>
+      <textarea id="notes" placeholder="Optional, e.g. compressor motor 3 noisy"></textarea>
+    </div>
+    <button class="lockbtn" id="relock" type="button">Lock checklist</button>
+  </div>
+
+  <div class="bar">
+    <div class="row">
+      <a class="btn btn-wa" id="send" href="https://api.whatsapp.com/send" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg>WhatsApp</a>
+      <button class="btn" id="copy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span id="copy-label">Copy checklist</span></button>
+    </div>
+    <div class="hint">Send or paste this checklist into the DXQ Workshop WhatsApp group.</div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+(function () {
+  var PASS_HASH = 3792604743767733;   // hash of the password (not the password itself)
+
+  document.body.className = "ready";
+
+  function el(id) { return document.getElementById(id); }
+  function two(n) { return n < 10 ? "0" + n : "" + n; }
+  function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+  function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function hash(str, seed) {
+    var h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (var i = 0, ch; i < str.length; i++) {
+      ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+  }
+
+  var now = new Date();
+  var days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var dateText = days[now.getDay()] + ", " + two(now.getDate()) + " " + months[now.getMonth()] + " " + now.getFullYear();
+  var today = now.getFullYear() + two(now.getMonth() + 1) + two(now.getDate());
+  el("today").textContent = dateText;
+
+  /* ---------- Password ---------- */
+  function unlock() { document.body.className = "ready unlocked"; }
+  if (load("dxq-unlocked") === today) unlock();        // stays unlocked on this phone until midnight
+
+  el("lockform").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var pw = el("pw").value.trim();
+    if (hash(pw, 314) === PASS_HASH) {
+      store("dxq-unlocked", today); el("pw").value = ""; el("pwerr").textContent = ""; unlock();
+    } else {
+      el("pwerr").textContent = "Wrong password";
+      var card = el("lockform"); card.className = "lock-card shake";
+      setTimeout(function () { card.className = "lock-card"; }, 400);
+      el("pw").select();
+    }
+  });
+  el("relock").addEventListener("click", function () {
+    store("dxq-unlocked", ""); document.body.className = "ready"; window.scrollTo(0, 0);
+  });
+
+  /* ---------- Checklist ---------- */
+  // Which tab opens: #opening / #closing in the link, otherwise by time of day
+  var h = (location.hash || "").replace("#", "");
+  if (h === "closing" || (h !== "opening" && now.getHours() >= 15)) el("tab-closing").checked = true;
+
+  function active() { return el("tab-closing").checked ? "closing" : "opening"; }
+  function boxes(list) { return [].slice.call(document.querySelectorAll("#list-" + list + " input[type=checkbox]")); }
+  function tickKey(list) { return "dxq-" + list + "-" + today; }
+
+  el("name").value = load("dxq-name");
+  ["opening", "closing"].forEach(function (list) {
+    var b = boxes(list);
+    load(tickKey(list)).split(",").forEach(function (i) { if (i !== "" && b[+i]) b[+i].checked = true; });
+  });
+
+  function saveTicks(list) {
+    var on = [];
+    boxes(list).forEach(function (b, i) { if (b.checked) on.push(i); });
+    store(tickKey(list), on.join(","));
+  }
+
+  function buildMessage() {
+    var list = active(), all = boxes(list);
+    var done = all.filter(function (b) { return b.checked; }).length, total = all.length;
+    var t = new Date(), lines = [];
+    lines.push("🔧 *" + el("list-" + list).getAttribute("data-title") + "*");
+    lines.push("📅 " + dateText + " - " + two(t.getHours()) + ":" + two(t.getMinutes()));
+    lines.push("👤 In charge: " + (el("name").value.trim() || "-"));
+    lines.push("");
+    lines.push(done === total ? "✅ *ALL DONE (" + done + "/" + total + ")*"
+                              : "⚠️ *" + done + "/" + total + " DONE - " + (total - done) + " NOT DONE*");
+    var section = "";
+    all.forEach(function (b) {
+      if (b.getAttribute("data-sec") !== section) {
+        section = b.getAttribute("data-sec");
+        lines.push(""); lines.push("*" + section.toUpperCase() + "*");
+      }
+      lines.push((b.checked ? "✅ " : "❌ ") + "*" + b.getAttribute("data-title") + "*");
+      lines.push("_" + b.getAttribute("data-desc") + "_");
+    });
+    var notes = el("notes").value.trim();
+    if (notes) { lines.push(""); lines.push("📝 *Notes:* " + notes); }
+    return lines.join("\n");
+  }
+
+  function refresh() {
+    ["opening", "closing"].forEach(function (list) {
+      var all = boxes(list), done = all.filter(function (b) { return b.checked; }).length;
+      el("count-" + list).textContent = done + "/" + all.length;
+      el("fill-" + list).style.width = (done / all.length * 100) + "%";
+    });
+    el("send").href = "https://api.whatsapp.com/send?text=" + encodeURIComponent(buildMessage());
+  }
+
+  var timer;
+  function toast(msg) {
+    var t = el("toast"); t.textContent = msg; t.style.display = "block";
+    clearTimeout(timer); timer = setTimeout(function () { t.style.display = "none"; }, 2200);
+  }
+  function needName() {
+    if (el("name").value.trim()) return false;
+    el("name").className = "bad"; el("name").focus();
+    toast("Write who is in charge first");
+    setTimeout(function () { el("name").className = ""; }, 2200);
+    return true;
+  }
+  function copyText(text) {
+    var ok = false, area = document.createElement("textarea");
+    area.value = text; area.setAttribute("readonly", "");
+    area.style.position = "fixed"; area.style.top = "0"; area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.focus(); area.select(); area.setSelectionRange(0, text.length);
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(area);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () {}); ok = true;
+    }
+    return ok;
+  }
+
+  ["opening", "closing"].forEach(function (list) {
+    boxes(list).forEach(function (b) { b.addEventListener("change", function () { saveTicks(list); refresh(); }); });
+  });
+  el("tab-opening").addEventListener("change", refresh);
+  el("tab-closing").addEventListener("change", refresh);
+  el("name").addEventListener("input", function () { store("dxq-name", this.value); refresh(); });
+  el("notes").addEventListener("input", refresh);
+
+  el("send").addEventListener("click", function (ev) {
+    if (needName()) { ev.preventDefault(); return; }
+    refresh();
+    copyText(buildMessage());          // backup: text is also on the clipboard
+  });
+
+  el("copy").addEventListener("click", function () {
+    if (needName()) return;
+    var btn = this;
+    if (copyText(buildMessage())) {
+      btn.className = "btn done"; el("copy-label").textContent = "Copied ✓";
+      toast("Copied - paste it into the DXQ Workshop group");
+      setTimeout(function () { btn.className = "btn"; el("copy-label").textContent = "Copy checklist"; }, 2200);
+    } else {
+      toast("Copy blocked here - open in Safari or Chrome");
+    }
+  });
+
+  refresh();
+})();
+</script>
+</body>
+</html>
